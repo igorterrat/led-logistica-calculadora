@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flex LED Calc V8 (Final)</title>
+    <style>
+        :root {
+            --primary: #0078D7;
+            --danger: #e74c3c;
+            --success: #27ae60;
+            --dark: #2c3e50;
+            --light: #f4f6f9;
+            --white: #ffffff;
+            --border: #e1e4e8;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--light); color: var(--dark); margin: 0; padding: 15px; padding-bottom: 80px; }
+
+        /* HEADER */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .brand { font-size: 18px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 5px; }
+        .btn-config { background: #fff; border: 1px solid var(--border); padding: 8px; border-radius: 8px; color: var(--dark); cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        /* INPUT CARD */
+        .card { background: var(--white); border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 12px; border: 1px solid rgba(0,0,0,0.02); }
+        
+        .row-inputs { display: flex; gap: 10px; align-items: flex-end; }
+        .input-group { flex: 1; }
+        .input-group label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        .input-big { width: 100%; padding: 12px; font-size: 22px; font-weight: 800; text-align: center; border: 2px solid var(--border); border-radius: 8px; color: var(--primary); outline: none; transition: 0.2s; background: #fff; }
+        .input-big:focus { border-color: var(--primary); }
+        .x-divider { padding-bottom: 15px; font-weight: bold; color: #ccc; }
+
+        /* TOGGLE P3/P2 */
+        .pitch-selector { display: flex; background: #eef2f5; border-radius: 8px; padding: 4px; margin-top: 10px; gap: 4px; }
+        .pitch-opt { 
+            flex: 1; 
+            text-align: center; 
+            padding: 8px 4px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            color: #666; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+            align-items: center;
+        }
+        .pitch-opt.active { background: var(--white); color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        .pitch-name { font-size: 13px; font-weight: 800; }
+        .pitch-res { font-size: 10px; opacity: 0.7; font-weight: 600; margin-top: 2px; }
+
+        /* DASHBOARD INFO */
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; margin-top: 15px; text-align: center; }
+        .dash-item { background: #f8f9fa; padding: 8px 4px; border-radius: 8px; border: 1px solid #eee; }
+        .dash-val { font-size: 14px; font-weight: 900; color: var(--dark); display: block; }
+        .dash-label { font-size: 9px; color: #888; font-weight: 700; text-transform: uppercase; }
+        .dash-sub { font-size: 9px; color: var(--primary); font-weight: 600; }
+
+        /* CASES BAR */
+        .case-bar { background: var(--white); border-left: 4px solid var(--danger); padding: 12px; margin: 10px 0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .case-info { font-weight: bold; font-size: 15px; }
+        .case-badge { background: var(--danger); color: white; font-size: 11px; padding: 4px 10px; border-radius: 12px; font-weight: bold; }
+
+        /* PROCESSOR SELECT */
+        .proc-container { position: relative; margin-bottom: 15px; }
+        .proc-select { width: 100%; padding: 12px; font-size: 15px; font-weight: 600; border: 1px solid var(--border); border-radius: 8px; background: white; appearance: none; color: #444; }
+        .cap-bar-bg { height: 6px; background: #eee; width: 100%; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+        .cap-bar-fill { height: 100%; width: 0%; background: var(--success); transition: width 0.3s; }
+        .proc-status { font-size: 11px; text-align: right; margin-top: 5px; color: #888; font-weight: 600; }
+
+        /* LISTA DE MATERIAIS */
+        .list-container { background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .list-item { display: flex; border-bottom: 1px solid #f0f0f0; padding: 12px 15px; align-items: center; }
+        .list-item:last-child { border-bottom: none; }
+        
+        .qty-box { 
+            width: 50px; height: 40px; 
+            background: #f4f6f9; border: 1px solid #ddd; 
+            border-radius: 8px; display: flex; 
+            align-items: center; justify-content: center; 
+            font-weight: 900; font-size: 18px; color: var(--dark); 
+            margin-right: 15px; 
+        }
+
+        .item-content { flex: 1; }
+        
+        .item-header { 
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 16px; font-weight: 700; color: #333; 
+        }
+
+        .item-sub {
+            font-size: 11px; color: #e67e22; font-weight: 600; margin-top: 2px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        .cable-select {
+            background: #eef6ff; 
+            border: 2px solid var(--primary); 
+            border-radius: 6px; padding: 4px 8px; 
+            font-size: 13px; font-weight: 800; color: var(--primary);
+            outline: none; cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* FOOTER ASSINATURA */
+        .footer-credit {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #bdc3c7;
+            font-weight: 500;
+        }
+
+        /* MODAL CONFIG */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 90%; max-height: 85%; border-radius: 12px; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+        .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .lib-item { padding: 10px; border: 1px solid #eee; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .btn-add-lib { background: #ffba00; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 11px; cursor: pointer; color: #444; }
+        .btn-remove-my { background: #ffebee; color: var(--danger); border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; }
+        .section-title { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase; margin: 15px 0 8px 0; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="brand">📱 Flex LED <span style="font-size:12px; background:#eee; padding:2px 6px; border-radius:4px; color:#555; margin-left:5px;">V8</span></div>
+        <button class="btn-config" onclick="openModal()">⚙️</button>
+    </div>
+
+    <div class="card">
+        <div class="row-inputs">
+            <div class="input-group">
+                <label>Largura (m)</label>
+                <input type="number" id="w" class="input-big" placeholder="0" oninput="calc()">
+            </div>
+            <div class="x-divider">X</div>
+            <div class="input-group">
+                <label>Altura (m)</label>
+                <input type="number" id="h" class="input-big" placeholder="0" oninput="calc()">
+            </div>
+        </div>
+
+        <div class="pitch-selector">
+            <div id="btn-p3" class="pitch-opt active" onclick="setPitch('P3')">
+                <span class="pitch-name">P3.9 (Standard)</span>
+                <span class="pitch-res">128x256 px</span>
+            </div>
+            <div id="btn-p2" class="pitch-opt" onclick="setPitch('P2')">
+                <span class="pitch-name">P2.9 (High Res)</span>
+                <span class="pitch-res">168x336 px</span>
+            </div>
+        </div>
+
+        <div style="text-align:center; margin-top:15px; font-size:13px; color:#666;">
+            Resolução: <strong style="color:var(--primary);" id="res-disp">0 x 0</strong> 
+            <span style="color:#ddd; margin:0 5px;">|</span> 
+            Total: <strong id="px-total" style="color:#333;">0 px</strong>
+        </div>
+    </div>
+
+    <div class="dash-grid">
+        <div class="dash-item">
+            <span class="dash-val" id="val-peso">0</span>
+            <span class="dash-label">kg</span>
+        </div>
+        <div class="dash-item">
+            <span class="dash-val" id="val-kw">0</span>
+            <span class="dash-label">kW (Max)</span>
+        </div>
+        <div class="dash-item" style="grid-column: span 2;">
+            <span class="dash-val" id="val-amp">0 A</span>
+            <span class="dash-label">Amperagem Total</span>
+            <div class="dash-sub" id="val-amp-cabo">(0 A / Cabo)</div>
+        </div>
+    </div>
+
+    <div class="case-bar">
+        <div class="case-info">(<span id="qtd-cases">0</span>) Cases de Transporte</div>
+        <div class="case-badge"><span id="total-paineis">0</span> Paineis</div>
+    </div>
+
+    <div class="card" style="padding:10px;">
+        <div class="input-group">
+            <label style="margin-bottom:5px;">Processadora</label>
+            <div class="proc-container" style="margin:0;">
+                <select id="proc-select" class="proc-select" onchange="calc()">
+                    </select>
+                <div class="cap-bar-bg"><div id="cap-bar-fill" class="cap-bar-fill"></div></div>
+                <div id="proc-status" class="proc-status">0% Ocupado</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="list-container" id="material-list">
+        </div>
+
+    <div class="footer-credit">
+        Criador: Igor Terra Tozzi <br>
+        (77) 9.9974-7920
+    </div>
+
+    <div id="config-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Configurar Processadoras</span>
+                <span onclick="closeModal()" style="cursor:pointer; font-size:24px;">&times;</span>
+            </div>
+            
+            <div class="section-title">Minha Lista Ativa</div>
+            <div id="my-list-container"></div>
+
+            <div class="section-title" style="margin-top:20px;">Biblioteca (Adicionar)</div>
+            <div style="font-size:11px; color:#666; margin-bottom:10px;">Toque para adicionar à sua lista principal.</div>
+            <div id="library-container"></div>
+
+            <button onclick="resetDefaults()" style="margin-top:20px; padding:10px; background:#eee; border:none; border-radius:6px; color:#666;">Restaurar Padrão de Fábrica (4 Itens)</button>
+        </div>
+    </div>
+
+<script>
+    // --- DADOS REAIS DE CARGA ---
+    const SPECS = {
+        panelW: 0.5,
+        panelH: 1.0, 
+        weight: 13.5, 
+        watts: 700,   
+        amps: 3.2,    
+        px_P3: 32768, // 128 x 256
+        px_P2: 56448  // 168 x 336 (Padrão P2.9)
+    };
+
+    const CABLE_SIZES = [1, 2, 3, 5, 10, 20, 30, 50, 70, 80, 100];
+    let selectedACLen = 30;
+    let selectedRJLen = 50;
+
+    const LIBRARY = [
+        { id: 'vx1000', name: 'Novastar VX1000', cap: 6500000, ports: 10 },
+        { id: 'vx600', name: 'Novastar VX600', cap: 3900000, ports: 6 },
+        { id: 'vx600pro', name: 'Novastar VX600 Pro', cap: 3900000, ports: 6, extra: 'Fibra' },
+        { id: 'vx400pro', name: 'Novastar VX400 Pro', cap: 2600000, ports: 4 },
+        { id: 'x6', name: 'Colorlight X6 2K', cap: 3900000, ports: 6 },
+        { id: 'cms260', name: 'Novastar CMS260', cap: 2600000, ports: 4 },
+        { id: 'mctrl660', name: 'Novastar MCTRL 660', cap: 2300000, ports: 4 },
+        { id: 'v760', name: 'Novastar V760-G', cap: 1300000, ports: 2 },
+        { id: 'lvp300', name: 'One Light LVP-300', cap: 500000, ports: 4 },
+        { id: 'kit300', name: 'LVP-300 Kit + Case', cap: 500000, ports: 4 }
+    ];
+
+    const DEFAULT_IDS = ['vx1000', 'vx600', 'mctrl660', 'v760'];
+    let currentPitch = 'P3';
+    let userList = []; 
+
+    window.onload = function() {
+        loadUserList();
+        renderSelect();
+        calc();
+    };
+
+    function loadUserList() {
+        const saved = localStorage.getItem('flex_user_processors');
+        if (saved) {
+            userList = JSON.parse(saved);
+        } else {
+            userList = LIBRARY.filter(p => DEFAULT_IDS.includes(p.id));
+        }
+    }
+
+    function saveUserList() {
+        localStorage.setItem('flex_user_processors', JSON.stringify(userList));
+        renderSelect();
+        calc(); 
+    }
+
+    function renderSelect() {
+        const sel = document.getElementById('proc-select');
+        sel.innerHTML = "";
+        userList.sort((a,b) => b.cap - a.cap);
+        userList.forEach(p => {
+            let opt = document.createElement('option');
+            opt.value = p.id;
+            opt.text = `${p.name} (${(p.cap/1000000).toFixed(1)}M | ${p.ports} Portas)`;
+            sel.appendChild(opt);
+        });
+    }
+
+    function setPitch(p) {
+        currentPitch = p;
+        document.getElementById('btn-p3').className = p === 'P3' ? 'pitch-opt active' : 'pitch-opt';
+        document.getElementById('btn-p2').className = p === 'P2' ? 'pitch-opt active' : 'pitch-opt';
+        calc();
+    }
+
+    function updateCableSize(type, val) {
+        if(type === 'AC') selectedACLen = parseInt(val);
+        if(type === 'RJ') selectedRJLen = parseInt(val);
+        calc();
+    }
+
+    function getCableSelectHTML(type, currentVal) {
+        let html = `<select class="cable-select" onchange="updateCableSize('${type}', this.value)">`;
+        CABLE_SIZES.forEach(size => {
+            let sel = (size === currentVal) ? 'selected' : '';
+            html += `<option value="${size}" ${sel}>${size}m</option>`;
+        });
+        html += `</select>`;
+        return html;
+    }
+
+    // --- CÁLCULO ---
+    function calc() {
+        const w = parseFloat(document.getElementById('w').value) || 0;
+        const h = parseFloat(document.getElementById('h').value) || 0;
+
+        const area = w * h;
+        const qtd = Math.ceil(area / 0.5); 
+        
+        // CÁLCULOS ELÉTRICOS
+        const peso = qtd * SPECS.weight;
+        const kw = (qtd * SPECS.watts) / 1000;
+        const ampTotal = qtd * SPECS.amps; 
+
+        // PIXEL E RESOLUÇÃO REAL
+        const pxPerPanel = currentPitch === 'P3' ? SPECS.px_P3 : SPECS.px_P2;
+        const totalPx = qtd * pxPerPanel;
+        
+        // Resolução Visual (Largura em M * Px por metro)
+        // P3 = 256 px/m | P2.9 = 336 px/m (aprox)
+        const density = currentPitch === 'P3' ? 256 : 336;
+        const resW = Math.round(w * density); 
+        const resH = Math.round(h * density);
+
+        const cases = Math.ceil(qtd / 6);
+        
+        // Regras
+        const cabosMainAC = Math.ceil(qtd / 15);
+        const ampPorCabo = cabosMainAC > 0 ? (ampTotal / cabosMainAC) : 0;
+        
+        let cabosMainData = 0;
+        if (currentPitch === 'P3') {
+            cabosMainData = Math.ceil(qtd / 20); 
+        } else {
+            cabosMainData = Math.ceil(qtd / 10); 
+        }
+
+        // --- EXIBIÇÃO ---
+        document.getElementById('res-disp').innerText = `${resW} x ${resH}`;
+        document.getElementById('px-total').innerText = totalPx.toLocaleString() + " px"; 
+        
+        document.getElementById('val-peso').innerText = peso.toFixed(0);
+        document.getElementById('val-kw').innerText = kw.toFixed(1);
+        document.getElementById('val-amp').innerText = ampTotal.toFixed(1) + " A";
+        document.getElementById('val-amp-cabo').innerText = `(${ampPorCabo.toFixed(1)} A / Cabo)`;
+        document.getElementById('qtd-cases').innerText = cases;
+        document.getElementById('total-paineis').innerText = qtd;
+
+        updateProcessorBar(totalPx);
+        renderList(qtd, cases, cabosMainAC, cabosMainData);
+    }
+
+    function updateProcessorBar(totalPx) {
+        const sel = document.getElementById('proc-select');
+        if (!sel.value) return;
+        const proc = LIBRARY.find(p => p.id === sel.value);
+        
+        if (totalPx === 0) {
+            document.getElementById('cap-bar-fill').style.width = '0%';
+            document.getElementById('proc-status').innerText = '0% Ocupado';
+            return;
+        }
+
+        const pct = (totalPx / proc.cap) * 100;
+        const bar = document.getElementById('cap-bar-fill');
+        bar.style.width = Math.min(pct, 100) + '%';
+        
+        if (pct > 100) {
+            bar.style.backgroundColor = 'var(--danger)';
+            document.getElementById('proc-status').innerHTML = `<span style="color:red; font-weight:bold;">ESTOUROU CAPACIDADE (${pct.toFixed(0)}%)</span>`;
+        } else {
+            bar.style.backgroundColor = 'var(--success)';
+            document.getElementById('proc-status').innerText = `${pct.toFixed(1)}% Ocupado (Sobra: ${((proc.cap - totalPx)/1000000).toFixed(2)}M px)`;
+        }
+    }
+
+    function renderList(qtd, cases, mainAC, mainData) {
+        const list = document.getElementById('material-list');
+        const selectAC = getCableSelectHTML('AC', selectedACLen);
+        const selectRJ = getCableSelectHTML('RJ', selectedRJLen);
+
+        const ruleAC = "(Max 15un)";
+        const ruleData = currentPitch === 'P2' ? "(Dobro: Max 10un)" : "(Padrão: Max 20un)";
+
+        const items = [
+            { q: qtd, t: 'Cabo AC Energia', d: 'Interligação entre placas', widget: '' },
+            { q: qtd, t: 'Cabo RJ45 Dados', d: 'Interligação entre placas', widget: '' },
+            { q: mainAC, t: 'Cabo AC C/ Tomada', d: ruleAC, widget: selectAC },
+            { q: mainData, t: 'Cabo RJ45 Main', d: ruleData, widget: selectRJ },
+            { q: qtd, t: 'Chapinha de União', d: '', widget: '' },
+            { q: qtd * 4, t: 'Parafusos P/Chapinha', d: '', widget: '' },
+            { q: cases, t: 'Cinta Catraca', d: '1 por Case', widget: '' },
+        ];
+
+        let html = '';
+        items.forEach(i => {
+            html += `
+            <div class="list-item">
+                <div class="qty-box">${i.q}</div>
+                <div class="item-content">
+                    <div class="item-header">
+                        <span>${i.t}</span>
+                        ${i.widget}
+                    </div>
+                    ${i.d ? `<div class="item-sub">${i.d}</div>` : ''}
+                </div>
+            </div>`;
+        });
+        list.innerHTML = html;
+    }
+
+    function openModal() {
+        document.getElementById('config-modal').style.display = 'flex';
+        renderConfigLists();
+    }
+    function closeModal() {
+        document.getElementById('config-modal').style.display = 'none';
+    }
+
+    function renderConfigLists() {
+        const myContainer = document.getElementById('my-list-container');
+        myContainer.innerHTML = '';
+        userList.forEach((p, index) => {
+            myContainer.innerHTML += `
+            <div class="lib-item" style="background:#f9f9f9;">
+                <div><b>${p.name}</b><br>${p.ports} Portas</div>
+                <button class="btn-remove-my" onclick="removeFromList(${index})">Remover</button>
+            </div>`;
+        });
+
+        const libContainer = document.getElementById('library-container');
+        libContainer.innerHTML = '';
+        const userIds = userList.map(u => u.id);
+        const available = LIBRARY.filter(l => !userIds.includes(l.id));
+
+        available.forEach(p => {
+            libContainer.innerHTML += `
+            <div class="lib-item">
+                <div><b>${p.name}</b><br>${(p.cap/1000000).toFixed(1)}M px | ${p.ports} Eth</div>
+                <button class="btn-add-lib" onclick="addToList('${p.id}')">+ Add</button>
+            </div>`;
+        });
+    }
+
+    function addToList(id) {
+        const item = LIBRARY.find(p => p.id === id);
+        if (item) {
+            userList.push(item);
+            saveUserList();
+            renderConfigLists();
+        }
+    }
+
+    function removeFromList(index) {
+        if (userList.length <= 1) {
+            alert("Você precisa ter pelo menos 1 processadora.");
+            return;
+        }
+        userList.splice(index, 1);
+        saveUserList();
+        renderConfigLists();
+    }
+
+    function resetDefaults() {
+        if(confirm("Voltar para as 4 processadoras originais?")) {
+            userList = LIBRARY.filter(p => DEFAULT_IDS.includes(p.id));
+            saveUserList();
+            renderConfigLists();
+        }
+    }
+</script>
+</body>
+</html>
